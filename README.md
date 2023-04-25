@@ -12,23 +12,26 @@ Based on MediaRecorder and AudioContext implementation, it can record audio and 
 - targetCanvas: 播放动画或视频的canvas元素或是一个 '#id_name' or '.class_name' css选择器
 
 ## 配置参数（可选）
- * 2.手动配置： .setOptions() 方法
+.setOptions()
 
 ## 创建录制器
-.createRecorder() 方法
+.createRecorder()
 
-## 录制器控制方法
+## 录制器控制方法（主要方法）
 ``` 
-
 .start() 
 .pause() 
 .resume() 
 .stop() 
+
+```
+
+## 其它方法
+``` 
 .preview()
 .closePreview()
 .download()
 .changeAudio() 
-
 ```
 
 ## Usage
