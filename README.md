@@ -3,6 +3,9 @@
 基于MediaRecorder和AudioContext实现，能够录制网页上的audio和canvas，生成一个视频文件下载到本地。
 Based on MediaRecorder and AudioContext implementation, it can record audio and canvas on the web page and generate a video file to download locally.
 
+🔗 支持Chrome
+🔗 支持Safari（实测效果更好）
+
 ## 实例化
 实例化参数： constructor(targetAudio, targetCanvas)
 - targetAudio: 可播放音频的audio元素或是一个 '#id_name' or '.class_name' css选择器
