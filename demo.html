@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>录制canvas+audio</title>
+  </head>
+  <body>
+    <h1>网页媒体录制</h1>
+    <h4>1.录制canvas标签数据</h4>
+    <h4>2.录制audio标签数据</h4>
+    <h4>合并1和2的流数据，生成有声视频</h4>
+    <hr />
+    <canvas id="canvas" width="600" height="400"></canvas>
+
+    <audio src="./viper.mp3" id="audio" controls></audio>
+    <hr />
+    <br />
+    <button id="startButton">开始录制</button>
+    <button id="stopButton">停止录制</button>
+    <button id="pauseButton">暂停录制</button>
+    <button id="resumeButton">恢复录制</button>
+    <button id="changeaudioButton">更换音频</button>
+    <br />
+    <br />
+    <button id="previewButton">预览视频</button>
+    <button id="closePreviewButton">关闭预览</button>
+    <button id="downloadButton">下载视频</button>
+
+    <script type="module">
+      import { ACRecorder } from "../dist/esm/index.js";
+      let ACR = new ACRecorder(document.querySelector("#audio"), "#canvas");
+      ACR.setListeners({
+        start: () => {
+          console.warn("# recorder - start");
+        },
+        fail: () => {
+          console.warn("# recorder - fail");
+        },
+        pause: () => {
+          console.warn("# recorder - pause");
+        },
+        resume: () => {
+          console.warn("# recorder - resume");
+        },
+        stop: () => {
+          console.warn("# recorder - stop");
+        },
+      });
+
+      let audios = [
+        "https://mdn.github.io/webaudio-examples/media-source-buffer/viper.mp3",
+        "./viper.mp3",
+      ];
+      let times = 0;
+      let animateRAF = null;
+
+      // 获取页面元素
+      const startButton = document.getElementById("startButton");
+      const stopButton = document.getElementById("stopButton");
+      const pauseButton = document.getElementById("pauseButton");
+      const resumeButton = document.getElementById("resumeButton");
+      const previewButton = document.getElementById("previewButton");
+      const closePreviewButton = document.getElementById("closePreviewButton");
+      const downloadButton = document.getElementById("downloadButton");
+      const changeaudioButton = document.getElementById("changeaudioButton");
+
+      // 添加事件监听器
+      startButton.addEventListener("click", () => {
+        document
+          .querySelector("#audio")
+          .play()
+          .then((res) => {
+            ACR.start()
+              .then((res) => {
+                drawAudioFrequency(res);
+              })
+              .catch(console.error);
+          });
+      });
+      pauseButton.addEventListener("click", () => {
+        document.querySelector("#audio").pause();
+        cancelAnimationFrame(animateRAF)
+        ACR.pause();
+      });
+      resumeButton.addEventListener("click", () => {
+        document.querySelector("#audio").play();
+        ACR.resume();
+      });
+      stopButton.addEventListener("click", () => {
+        document.querySelector("#audio").pause();
+        cancelAnimationFrame(animateRAF)
+        ACR.stop();
+      });
+      previewButton.addEventListener("click", () => {
+        ACR.preview();
+      });
+      closePreviewButton.addEventListener("click", () => {
+        ACR.closePreview();
+      });
+      downloadButton.addEventListener("click", () => {
+        ACR.download();
+      });
+      changeaudioButton.addEventListener("click", () => {
+        let url = audios[times % audios.length];
+        console.log(times, url);
+        ACR.changeAudio(url);
+        times++;
+      });
+
+      function drawAudioFrequency(context = {}) {
+        const { canvas, audioContext, audioSourceNode } = context;
+        // 创建分析器节点
+        const analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 1024; // [32,32768]
+
+        // 连接媒体源节点和分析器节点
+        audioSourceNode.connect(analyserNode);
+        audioSourceNode.connect(audioContext.destination); // 这里要再链接一下，否则开始录制后，网页声音会静音
+
+        // 创建绘图环境
+        const canvasCtx = canvas.getContext("2d");
+        const cvsHeight = canvas.height;
+        const cvsHalfHeight = cvsHeight / 2;
+        const cvsWidth = canvas.width;
+
+        // 坐标系转换
+        canvasCtx.translate(0, cvsHeight / 2);
+        canvasCtx.scale(1, -1);
+
+        function animate() {
+          // 获取分析数据
+          const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
+          //   analyserNode.getByteTimeDomainData(dataArray);
+          analyserNode.getByteFrequencyData(dataArray);
+
+          // 清空画布
+          canvasCtx.clearRect(0, -cvsHalfHeight, cvsWidth, cvsHeight);
+
+          // 设置画笔样式
+          canvasCtx.lineWidth = 2;
+          canvasCtx.strokeStyle = "#84019a";
+
+          // 开始绘制路径
+          canvasCtx.beginPath();
+
+          // 计算每个数据点的位置
+          const sliceWidth = (cvsWidth * 1.0) / dataArray.length;
+          let x = 0;
+          for (let i = 0; i < dataArray.length; i++) {
+            const v = dataArray[i] / 128;
+            const y = (v * cvsHalfHeight) / 2;
+
+            if (i === 0) {
+              canvasCtx.moveTo(x, y);
+            } else {
+              canvasCtx.lineTo(x, y);
+            }
+
+            x += sliceWidth + 1;
+          }
+
+          // 停止路径绘制
+          canvasCtx.stroke();
+
+          // 循环绘制
+          animateRAF = requestAnimationFrame(animate);
+        }
+
+        animate();
+      }
+    </script>
+  </body>
+</html>
