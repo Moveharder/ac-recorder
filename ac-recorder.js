@@ -130,9 +130,6 @@ export class ACRecorder {
         // 获取到音频流数据
         this.audioStream = mediaStreamDestination.stream;
 
-        console.log("audioContext:", audioContext);
-        console.log("sourceNode:", sourceNode);
-
         resolve({ msg: "获取音频流成功", stream: this.audioStream });
       } catch (err) {
         reject({ msg: "获取音频流失败", err });
@@ -172,7 +169,7 @@ export class ACRecorder {
 
       const { start, pause, resume, stop, fail } = this.callbacks;
       const combinedStream = new MediaStream([
-        // ...this.canvasStream.getTracks(),
+        ...this.canvasStream.getTracks(),
         ...this.audioStream.getTracks(),
       ]);
       this.mediaRecorder = new MediaRecorder(combinedStream, {
@@ -249,15 +246,15 @@ export class ACRecorder {
       if (![0, 2].includes(this.state)) {
         return reject({ msg: "请先停止录制" });
       }
-      // !!! 受制于“new AudioContext()”的问题，必须在某个用户操作动作之后执行this.createRecorder()方法。
-      await this.createRecorder();
+      // !!! 受制于“new AudioContext()”的问题，必须在某个用户操作动作之后执行this.createRecorder()方法
+      let res = await this.createRecorder();
 
       this.mediaRecorder.start();
       this.controlAudio("play");
       this.state = 1;
       this.mediaUrl = null;
 
-      resolve({ msg: "# recorder started" });
+      resolve({ msg: "# recorder started", ...res });
     });
   }
 
