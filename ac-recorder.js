@@ -108,9 +108,6 @@ export class ACRecorder {
         // 获取到音频流数据
         this.audioStream = destNode.stream;
 
-        // DO-STH-ELSE
-        // this.drawAudioFrequency();
-
         resolve({ msg: "获取音频流成功", stream: this.audioStream });
       } catch (err) {
         reject({ msg: "获取音频流失败", ...err });
