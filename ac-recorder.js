@@ -43,6 +43,7 @@ export class ACRecorder {
       this.canvas = document.querySelector(targetCanvas);
     }
 
+    // 根据浏览器自动设置mimeType
     this.setOptions();
   }
 
@@ -69,11 +70,30 @@ export class ACRecorder {
       }
     }
     this.options = { ...this.options, ...options };
-    console.log("this.options:", this.options);
+  }
+
+  /**
+   * 设置媒体监听事件，用于实现个人逻辑 - Promise
+   * @param {Object} listeners 录制器监听回调函数 { start, pause, resume, stop, fail }
+   * @returns - { msg }
+   */
+  setListeners(listeners = {}) {
+    return new Promise((resolve, reject) => {
+      if (typeof listeners !== "object") {
+        return reject({
+          msg: "listeners必须是对象，如：{ start, pause, resume, stop, fail }",
+        });
+      }
+      this.callbacks = { ...this.callbacks, ...listeners };
+      resolve({ msg: "成功设置事件监听" });
+    });
   }
 
   /**
    * 获取音频流（audio） - Promise
+   * !!!注意：new AudioContext()必须在某个用户操作之后执行，
+   * !!!否则会出现“The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page”警告，
+   * !!!导致音频无法播放。
    * https://developer.mozilla.org/zh-CN/docs/Web/API/AudioContext/createMediaElementSource
    */
   getAudioStream() {
@@ -89,28 +109,33 @@ export class ACRecorder {
 
       try {
         // 创建音频上下文
-        this.audioContext = new AudioContext();
+        let audioContext = new AudioContext();
+        // audioContext.resume()
 
         // 创建一个新的 MediaElementAudioSourceNode 对象，输入<audio>元素，对应的音频即可被播放或者修改。
-        this.sourceNode = this.audioContext.createMediaElementSource(
-          this.audio
-        );
-
-        // 创建一个关联着表示音频流的一个 WebRTC 对象
-        let destNode = this.audioContext.createMediaStreamDestination();
-
-        // 将 createMediaElementSource 连接到 createMediaStreamDestination，这样才能获取到音频的stream
-        this.sourceNode.connect(destNode);
+        let sourceNode = audioContext.createMediaElementSource(this.audio);
 
         // 这里要再链接一下，否则开始录制后，网页声音会静音
-        this.sourceNode.connect(this.audioContext.destination);
+        sourceNode.connect(audioContext.destination);
 
+        // 创建一个关联着表示音频流的一个 WebRTC 对象
+        let mediaStreamDestination =
+          audioContext.createMediaStreamDestination();
+
+        // 将 createMediaElementSource 连接到 createMediaStreamDestination，这样才能获取到音频的stream
+        sourceNode.connect(mediaStreamDestination);
+
+        this.audioContext = audioContext;
+        this.sourceNode = sourceNode;
         // 获取到音频流数据
-        this.audioStream = destNode.stream;
+        this.audioStream = mediaStreamDestination.stream;
+
+        console.log("audioContext:", audioContext);
+        console.log("sourceNode:", sourceNode);
 
         resolve({ msg: "获取音频流成功", stream: this.audioStream });
       } catch (err) {
-        reject({ msg: "获取音频流失败", ...err });
+        reject({ msg: "获取音频流失败", err });
       }
     });
   }
@@ -140,14 +165,14 @@ export class ACRecorder {
    * https://developer.mozilla.org/zh-CN/docs/Web/API/MediaRecorder
    */
   combinACStream() {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       if (this.mediaRecorder) {
         return resolve({ mediaRecorder: this.mediaRecorder });
       }
 
       const { start, pause, resume, stop, fail } = this.callbacks;
       const combinedStream = new MediaStream([
-        ...this.canvasStream.getTracks(),
+        // ...this.canvasStream.getTracks(),
         ...this.audioStream.getTracks(),
       ]);
       this.mediaRecorder = new MediaRecorder(combinedStream, {
@@ -163,18 +188,22 @@ export class ACRecorder {
       this.mediaRecorder.onresume = () => {
         resume && resume();
       };
-
-      // 停止录制并保存为视频文件
-      this.mediaRecorder.addEventListener("stop", () => {
+      this.mediaRecorder.onstop = () => {
         const blob = new Blob(this.recordingChunks, {
           type: this.options.mimeType,
         });
         const url = URL.createObjectURL(blob);
         this.mediaUrl = url;
 
-        stop && stop({ blobUrl: url });
-      });
+        // 计算视频大小
+        let size = this.recordingChunks.reduce((total, curr) => {
+          total += curr.size;
+          return total;
+        }, 0);
 
+        stop && stop({ blobUrl: url, size, chunks: this.recordingChunks });
+        this.recordingChunks = [];
+      };
       this.mediaRecorder.onerror = (event) => {
         fail &&
           fail({
@@ -182,15 +211,11 @@ export class ACRecorder {
             ...event.error,
           });
       };
-
-      this.mediaRecorder.addEventListener("dataavailable", (event) => {
-        console.log(
-          "# ondataavailable, size = " + parseInt(event.data.size / 1024) + "KB"
-        );
+      this.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           this.recordingChunks.push(event.data);
         }
-      });
+      };
 
       return resolve({ mediaRecorder: this.mediaRecorder });
     });
@@ -198,27 +223,17 @@ export class ACRecorder {
 
   /**
    * 创建媒体录制器 - Promise
-   * @param {Object} listeners 录制器监听回调函数 { start, pause, resume, stop, fail }
    * @returns - { mimeType, audio, canvas, ... }
    */
-  async createRecorder(listeners = {}) {
-    if (typeof listeners !== "object") {
-      return Promise.reject({
-        msg: "listeners必须是对象，如：{ start, pause, resume, stop, fail }",
-      });
-    }
-
+  async createRecorder() {
     this.state = 0;
-    this.callbacks = { ...this.callbacks, ...listeners };
-
     try {
       await this.getAudioStream();
       await this.getCanvasStream();
       await this.combinACStream();
     } catch (err) {
-      return reject({ msg: "创建录制器失败", ...err });
+      return Promise.reject({ msg: "创建录制器失败", ...err });
     }
-
     return Promise.resolve({
       audio: this.audio,
       audioSourceNode: this.sourceNode,
@@ -230,10 +245,13 @@ export class ACRecorder {
 
   /**开始 - Promise */
   start() {
-    return new Promise((resolve, reject) => {
+    return new Promise(async (resolve, reject) => {
       if (![0, 2].includes(this.state)) {
         return reject({ msg: "请先停止录制" });
       }
+      // !!! 受制于“new AudioContext()”的问题，必须在某个用户操作动作之后执行this.createRecorder()方法。
+      await this.createRecorder();
+
       this.mediaRecorder.start();
       this.controlAudio("play");
       this.state = 1;
@@ -340,7 +358,6 @@ export class ACRecorder {
     a.href = this.mediaUrl;
     a.download = `output.${this.options.saveType}`;
     a.click();
-    this.recordingChunks = []; // 清空 recordingChunks 数组
   }
 
   /**（是否）从内部控制音频的播放与暂停 */
@@ -363,5 +380,14 @@ export class ACRecorder {
     this.controlAudio("pause");
     this.audio.src = src;
     this.controlAudio("play");
+  }
+
+  destroy() {
+    this.audioContext.close();
+    this.audio = null;
+    this.audioContext = null;
+    this.canvas = null;
+    this.canvasStream = null;
+    this.recordingChunks = [];
   }
 }
