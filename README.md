@@ -1,6 +1,7 @@
 # ac-recorder
 
 基于 MediaRecorder 和 AudioContext 实现，能够录制网页上的 audio 和 canvas，生成一个视频文件下载到本地。
+
 Based on MediaRecorder and AudioContext implementation, it can record audio and canvas on the web page and generate a video file to download locally.
 
 🔗 支持 Chrome
