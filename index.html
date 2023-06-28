@@ -1,35 +1,36 @@
 <!DOCTYPE html>
-<html lang="zh">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>录制canvas+audio</title>
+    <title>Recording canvas+audio example</title>
   </head>
   <body>
-    <h1>网页媒体录制</h1>
-    <h4>1.录制canvas标签数据</h4>
-    <h4>2.录制audio标签数据</h4>
-    <h4>合并1和2的流数据，生成有声视频</h4>
+    <h1>Web Media Recording</h1>
+    <h4>1. Recording data from canvas tag</h4>
+    <h4>2. Recording data from audio tag</h4>
+    <h4>3. Merging streams from 1 and 2 to generate video with sound</h4>
     <hr />
     <canvas id="canvas" width="600" height="400"></canvas>
 
-    <audio src="https://mdn.github.io/webaudio-examples/media-source-buffer/viper.mp3" id="audio" controls></audio>
+    <audio src="./data/viper.mp3" id="audio" controls></audio>
     <hr />
     <br />
-    <button id="startButton">开始录制</button>
-    <button id="stopButton">停止录制</button>
-    <button id="pauseButton">暂停录制</button>
-    <button id="resumeButton">恢复录制</button>
-    <button id="changeaudioButton">更换音频</button>
+    <button id="startButton">Start Recording</button>
+    <button id="stopButton">Stop Recording</button>
+    <button id="pauseButton">Pause Recording</button>
+    <button id="resumeButton">Resume Recording</button>
+    <button id="changeaudioButton">Change Audio</button>
     <br />
     <br />
-    <button id="previewButton">预览视频</button>
-    <button id="closePreviewButton">关闭预览</button>
-    <button id="downloadButton">下载视频</button>
+    <button id="previewButton">Preview Video</button>
+    <button id="closePreviewButton">Close Preview</button>
+    <button id="downloadButton">Download Video</button>
 
+    <script  type="module" src="./dist/ac-recorder.js"></script>
     <script type="module">
-      import { ACRecorder } from "../dist/esm/index.js";
+      import { ACRecorder } from "./dist/ac-recorder.js";
       let ACR = new ACRecorder(document.querySelector("#audio"), "#canvas");
       ACR.setListeners({
         start: () => {
@@ -50,13 +51,12 @@
       });
 
       let audios = [
-        "https://mdn.github.io/webaudio-examples/media-source-buffer/viper.mp3",
-        "./viper.mp3",
+        "./data/viper.mp3",
       ];
       let times = 0;
       let animateRAF = null;
 
-      // 获取页面元素
+      // Get page elements
       const startButton = document.getElementById("startButton");
       const stopButton = document.getElementById("stopButton");
       const pauseButton = document.getElementById("pauseButton");
@@ -66,7 +66,7 @@
       const downloadButton = document.getElementById("downloadButton");
       const changeaudioButton = document.getElementById("changeaudioButton");
 
-      // 添加事件监听器
+      // Add event listeners
       startButton.addEventListener("click", () => {
         document
           .querySelector("#audio")
@@ -111,41 +111,41 @@
 
       function drawAudioFrequency(context = {}) {
         const { canvas, audioContext, audioSourceNode } = context;
-        // 创建分析器节点
+        // Create analyser node
         const analyserNode = audioContext.createAnalyser();
         analyserNode.fftSize = 1024; // [32,32768]
 
-        // 连接媒体源节点和分析器节点
+        // Connect the media source node and analyzer node
         audioSourceNode.connect(analyserNode);
-        audioSourceNode.connect(audioContext.destination); // 这里要再链接一下，否则开始录制后，网页声音会静音
+        audioSourceNode.connect(audioContext.destination);
 
-        // 创建绘图环境
+         // Create a drawing environment
         const canvasCtx = canvas.getContext("2d");
         const cvsHeight = canvas.height;
         const cvsHalfHeight = cvsHeight / 2;
         const cvsWidth = canvas.width;
 
-        // 坐标系转换
+        // Coordinate system transformation
         canvasCtx.translate(0, cvsHeight / 2);
         canvasCtx.scale(1, -1);
 
         function animate() {
-          // 获取分析数据
+           // Get analysis data
           const dataArray = new Uint8Array(analyserNode.frequencyBinCount);
           //   analyserNode.getByteTimeDomainData(dataArray);
           analyserNode.getByteFrequencyData(dataArray);
 
-          // 清空画布
+          // Clear the canvas
           canvasCtx.clearRect(0, -cvsHalfHeight, cvsWidth, cvsHeight);
 
-          // 设置画笔样式
+          // Set the brush style
           canvasCtx.lineWidth = 2;
           canvasCtx.strokeStyle = "#84019a";
 
-          // 开始绘制路径
+          // Start drawing path
           canvasCtx.beginPath();
 
-          // 计算每个数据点的位置
+          // Calculate the position of each data point
           const sliceWidth = (cvsWidth * 1.0) / dataArray.length;
           let x = 0;
           for (let i = 0; i < dataArray.length; i++) {
@@ -161,10 +161,10 @@
             x += sliceWidth + 1;
           }
 
-          // 停止路径绘制
+          // Stop drawing path
           canvasCtx.stroke();
 
-          // 循环绘制
+          // Loop draw
           animateRAF = requestAnimationFrame(animate);
         }
 
