@@ -1,27 +1,37 @@
-# ac-recorder
+#ac-recorder
 
-基于 MediaRecorder 和 AudioContext 实现，能够录制网页上的 audio 和 canvas，生成一个视频文件下载到本地。
-Based on MediaRecorder and AudioContext implementation, it can record audio and canvas on the web page and generate a video file to download locally.
+Based on MediaRecorder and AudioContext implementation: can record audio and canvas on a web page simultaneously, and generate a video file to download locally.
 
-🔗 支持 Chrome
-🔗 支持 Safari（实测效果更好）
+🔗 Chrome support
+🔗 Support Safari
 
-## 实例化
+## Example
 
-实例化参数： constructor(targetAudio, targetCanvas)
+To see it in action, run
+```
+npm install
+npm run build
+npm start
+```
 
-- targetAudio: 可播放音频的 audio 元素或是一个 '#id_name' or '.class_name' css 选择器
-- targetCanvas: 播放动画或视频的 canvas 元素或是一个 '#id_name' or '.class_name' css 选择器
+and hit "start recording", then "preview video".
 
-## 配置参数（可选）
+## Instantiation
+
+Instantiation parameters: constructor(targetAudio, targetCanvas)
+
+- targetAudio: the audio element that can play audio or a '#id_name' or '.class_name' css selector
+- targetCanvas: The canvas element that plays the animation or video or a '#id_name' or '.class_name' css selector
+
+## Configuration parameters (optional)
 
 .setOptions()
 
-## 创建录制器
+## Create recorder
 
 .createRecorder()
 
-## 录制器控制方法（主要方法）
+## Recorder control method (main method)
 
 ```
 .start()
@@ -31,7 +41,7 @@ Based on MediaRecorder and AudioContext implementation, it can record audio and 
 
 ```
 
-## 其它方法
+## other methods
 
 ```
 .preview()
@@ -42,19 +52,19 @@ Based on MediaRecorder and AudioContext implementation, it can record audio and 
 
 ## Usage
 
-1. 导入 ACRecorder 类:
+1. Import the ACRecorder class:
 
 ```
 import { ACRecorder } from "./index.js";
 ```
 
-2. 实例化 ACRecorder,传入要录制的 audio 元素和 canvas 元素:
+2. Instantiate ACRecorder, and pass in the audio element and canvas element to be recorded:
 
 ```
-let ACR = new ACRecorder(document.querySelector("#audio"), "#canvas");
+let ACR = new ACRecorder(document. querySelector("#audio"), "#canvas");
 ```
 
-3. 设置监听事件(可选):
+3. Set up listening events (optional):
 
 ```
 ACR.setListeners({
@@ -66,49 +76,49 @@ ACR.setListeners({
 });
 ```
 
-4. 开始录制:
+4. Start recording:
 
 ```
 ACR.start();
 ```
 
-5. 暂停录制:
+5. Pause recording:
 
 ```
-ACR.pause();
+ACR. pause();
 ```
 
-6. 恢复录制:
+6. Resume recording:
 
 ```
-ACR.resume();
+ACR. resume();
 ```
 
-7. 停止录制:
+7. Stop recording:
 
 ```
-ACR.stop();
+ACR. stop();
 ```
 
-8. 预览录制视频(可选):
+8. Preview recorded video (optional):
 
 ```
-ACR.preview();
+ACR. preview();
 ```
 
-9. 关闭视频预览(可选):
+9. Turn off video preview (optional):
 
 ```
-ACR.closePreview();
+ACR. closePreview();
 ```
 
-10. 下载录制视频(可选):
+10. Download recorded video (optional):
 
 ```
 ACR.download();
 ```
 
-11. 销毁录制器(可选):
+11. Destroy the recorder (optional):
 
 ```
 ACR.destroy();
@@ -116,4 +126,4 @@ ACR.destroy();
 
 ## Tips
 
-> `new AudioContext()`必须在某个用户操作之后执行，否则会出现“The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page”警告，导致音频无法播放。
+> `new AudioContext()` must be executed after a user operation, otherwise the warning "The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page" will appear, causing the audio to fail to play .

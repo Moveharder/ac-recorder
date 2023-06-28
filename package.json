@@ -1,0 +1,28 @@
+{
+  "name": "ac-recorder",
+  "version": "1.0.0",
+  "description": "Based on MediaRecorder and AudioContext implementation: record audio and canvas on a web page simultaneously.",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc --build",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rewbs/ac-recorder.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rewbs/ac-recorder/issues"
+  },
+  "homepage": "https://github.com/rewbs/ac-recorder#readme",
+  "devDependencies": {
+    "@types/node": "^20.3.2",
+    "connect": "^3.7.0",
+    "serve-static": "^1.15.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.1.5"
+  }
+}
